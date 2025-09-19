@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'MyFont';
+  src: url('/src/assets/fonts/MyFont.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: 'MyFont', sans-serif;
+}
+
+
+/* Import fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Roboto:wght@400;500&display=swap');
+
+/* Global styles */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f5f6fa;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6, button {
+  font-family: 'Montserrat', sans-serif;
+}
