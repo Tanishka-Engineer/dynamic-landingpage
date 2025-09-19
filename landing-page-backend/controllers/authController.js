@@ -1,21 +1,17 @@
-import User from '../models/authModel.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import nodemailer from "nodemailer";
-
-// Environment variables (recommended)
-const JWT_SECRET = process.env.JWT_SECRET || "mySuperSecretKey123";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+import User from "../models/authModel.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { JWT_EXPIRES, JWT_SECRET } from "../config/common.js";
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role } = req.body;
 
     // Input validation
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide username, email, and password'
+        message: "Please provide username, email, and password",
       });
     }
 
@@ -24,7 +20,7 @@ export const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists'
+        message: "User already exists",
       });
     }
 
@@ -35,25 +31,27 @@ export const register = async (req, res) => {
     const user = new User({
       username,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role,
     });
 
     await user.save();
-    
+
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
-      }
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (err) {
-    console.error('Registration error:', err);
+    console.error("Registration error:", err);
     res.status(500).json({
       success: false,
-      error: err.message || 'Server error'
+      error: err.message || "Server error",
     });
   }
 };
@@ -66,7 +64,7 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password'
+        message: "Please provide email and password",
       });
     }
 
@@ -75,7 +73,7 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -84,38 +82,39 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
     // Check if jwt is available
-    if (typeof jwt.sign !== 'function') {
-      throw new Error('JWT module not properly loaded');
+    if (typeof jwt.sign !== "function") {
+      throw new Error("JWT module not properly loaded");
     }
 
     // Generate JWT
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      { expiresIn: JWT_EXPIRES }
     );
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
-        createdAt: user.createdAt
-      }
+        createdAt: user.createdAt,
+        role: user.role,
+      },
     });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error("Login error:", err);
     res.status(500).json({
       success: false,
-      error: err.message || 'Server error'
+      error: err.message || "Server error",
     });
   }
 };
@@ -127,26 +126,32 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
     }
 
     // Generate reset token
     const resetToken = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || "secret123",
+      process.env.JWT_SECRET_TOKEN || "secret123",
       { expiresIn: "15m" }
     );
 
     // Normally, send this link by email
-    const resetLink = `http://localhost:5173/reset-password/${resetToken}`; // frontend route
+    const resetLink = `http://localhost:5173/reset-password/${resetToken}`; 
 
     // Example: just return it in JSON for now
     return res.json({
       success: true,
       message: "Password reset link generated",
-      resetLink
+      resetLink,
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
   }
 };
