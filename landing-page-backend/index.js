@@ -1,43 +1,26 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const mongoose = require("./config/db");
-const User = require("./models/User");
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+
+dotenv.config();
+
+const PORT = process.env.PORT || 5000;
 
 const app = express();
+app.use(express.json());
 app.use(cors());
-app.use(bodyParser.json());
 
-const JWT_SECRET = "your_jwt_secret_key"; // keep it secure!
+app.use('/api/v1/auth', authRoutes);
 
-// Registration endpoint
-app.post("/register", async (req, res) => {
-    const { name, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
+//for testing
+app.get('/', (req, res) => res.send('Auth API up'));
 
-    try {
-        const user = new User({ name, email, password: hashedPassword });
-        await user.save();
-        res.status(201).send({ message: "User registered successfully" });
-    } catch (err) {
-        res.status(400).send({ error: "User already exists" });
-    }
+// Wait for MongoDB connection before starting server
+connectDB().then(() => {
+  console.log("MongoDB connected.");
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}).catch(err => {
+  console.error("Failed to connect to MongoDB:", err);
 });
-
-// Login endpoint
-app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).send({ error: "User not found" });
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return res.status(400).send({ error: "Invalid password" });
-
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
-    res.send({ message: "Login successful", token });
-});
-
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
